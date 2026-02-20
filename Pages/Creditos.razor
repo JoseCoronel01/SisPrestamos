@@ -1,0 +1,278 @@
+@page "/creditos"
+@using Microsoft.JSInterop
+@using SisPrestamos.Model
+@using SisPrestamos.Service
+@inject LineaService LineaService
+@inject CreditoService CreditoService
+@inject ClienteService ClienteService
+@inject ExcelExportService ExcelExportService
+@inject ExcelImportService ExcelImportService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Gestión de Créditos</h2>
+            <button class="btn btn-info mb-3" @onclick="AbrirFormulario">Nuevo Crédito</button>
+            <button class="btn btn-info mb-3 ms-2" @onclick="ExportarExcel">Exportar a Excel</button>
+            <button class="btn btn-warning mb-3 ms-2" @onclick="AbrirImportador">Importar Excel</button>
+        </div>
+    </div>
+
+    @if (MostrarImportador)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Importar Créditos desde Excel</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Selecciona un archivo Excel</label>
+                        <InputFile OnChange="ManejarCargaArchivo" accept=".xlsx,.xls" class="form-control" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-warning me-2" @onclick="ImportarCreditosDesdeExcel" disabled="@(ArchivoSeleccionado == null)">Importar</button>
+                        <button type="button" class="btn btn-secondary" @onclick="CerrarImportador">Cancelar</button>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(MensajeImportacion))
+                {
+                    <div class="alert @(MensajeImportacionExito ? "alert-success" : "alert-danger") mt-3" role="alert">
+                        @MensajeImportacion
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (MostrarFormulario)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">@(EdicionId > 0 ? "Editar Crédito" : "Nuevo Crédito")</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Línea de Crédito</label>
+                            <select class="form-select" @bind="FormularioCredito.LineaId">
+                                <option value="0">Seleccionar línea...</option>
+                                @foreach (var linea in ListaLineas)
+                                {
+                                    var cliente = ListaClientes.FirstOrDefault(c => c.Id == linea.ClienteId);
+                                    <option value="@linea.Id">@cliente?.Name - $@linea.Monto.ToString("F2")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Importe</label>
+                            <input type="number" class="form-control" step="0.01" @bind="FormularioCredito.Importe" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-info me-2" @onclick="GuardarCredito">Guardar</button>
+                            <button type="button" class="btn btn-secondary" @onclick="CerrarFormulario">Cancelar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Listado de Créditos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Cliente</th>
+                                    <th>Línea</th>
+                                    <th>Importe</th>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var credito in ListaCreditos)
+                                {
+                                    var linea = ListaLineas.FirstOrDefault(l => l.Id == credito.LineaId);
+                                    var cliente = ListaClientes.FirstOrDefault(c => c.Id == linea?.ClienteId);
+                                    <tr>
+                                        <td>@credito.Id</td>
+                                        <td>@cliente?.Name</td>
+                                        <td>@credito.LineaId</td>
+                                        <td>$@credito.Importe.ToString("F2")</td>
+                                        <td>@credito.Fecha.ToShortDateString()</td>
+                                        <td>@credito.Hora.ToString(@"hh\:mm\:ss")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => EditarCredito(credito)">Editar</button>
+                                            <button class="btn btn-sm btn-danger" @onclick="() => EliminarCredito(credito.Id)">Eliminar</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Cliente> ListaClientes = new();
+    private List<Linea> ListaLineas = new();
+    private List<Credito> ListaCreditos = new();
+    private Credito FormularioCredito = new();
+    private bool MostrarFormulario = false;
+    private bool MostrarImportador = false;
+    private int EdicionId = 0;
+    private IBrowserFile? ArchivoSeleccionado;
+    private string MensajeImportacion = "";
+    private bool MensajeImportacionExito = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        ListaClientes = await ClienteService.GetAllAsync();
+        ListaLineas = await LineaService.GetAllAsync();
+        ListaCreditos = await CreditoService.GetAllAsync();
+    }
+
+    private void AbrirFormulario()
+    {
+        FormularioCredito = new Credito();
+        EdicionId = 0;
+        MostrarFormulario = true;
+    }
+
+    private void CerrarFormulario()
+    {
+        MostrarFormulario = false;
+        FormularioCredito = new Credito();
+        EdicionId = 0;
+    }
+
+    private async Task GuardarCredito()
+    {
+        if (EdicionId > 0)
+        {
+            FormularioCredito.Id = EdicionId;
+            await CreditoService.UpdateAsync(FormularioCredito);
+        }
+        else
+        {
+            await CreditoService.AddAsync(FormularioCredito);
+        }
+        await CargarDatos();
+        CerrarFormulario();
+    }
+
+    private void EditarCredito(Credito credito)
+    {
+        FormularioCredito = new Credito
+        {
+            Id = credito.Id,
+            LineaId = credito.LineaId,
+            Importe = credito.Importe,
+            Fecha = credito.Fecha,
+            Hora = credito.Hora
+        };
+        EdicionId = credito.Id;
+        MostrarFormulario = true;
+    }
+
+    private async Task EliminarCredito(int id)
+    {
+        if (await ConfirmarEliminacion())
+        {
+            await CreditoService.DeleteAsync(id);
+            await CargarDatos();
+        }
+    }
+
+    private async Task<bool> ConfirmarEliminacion()
+    {
+        return await JSRuntime.InvokeAsync<bool>("confirm", "¿Deseas eliminar este crédito?");
+    }
+
+    private async Task ExportarExcel()
+    {
+        var contenido = ExcelExportService.ExportCreditosToExcel(ListaCreditos, ListaLineas, ListaClientes);
+        var nombreArchivo = $"Creditos_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        await DescargarArchivo(contenido, nombreArchivo);
+    }
+
+    private async Task DescargarArchivo(byte[] contenido, string nombreArchivo)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", nombreArchivo, Convert.ToBase64String(contenido));
+    }
+
+    private void AbrirImportador()
+    {
+        ArchivoSeleccionado = null;
+        MensajeImportacion = "";
+        MostrarImportador = true;
+    }
+
+    private void CerrarImportador()
+    {
+        MostrarImportador = false;
+        ArchivoSeleccionado = null;
+        MensajeImportacion = "";
+    }
+
+    private void ManejarCargaArchivo(InputFileChangeEventArgs e)
+    {
+        ArchivoSeleccionado = e.File;
+    }
+
+    private async Task ImportarCreditosDesdeExcel()
+    {
+        if (ArchivoSeleccionado == null) return;
+
+        try
+        {
+            using (var stream = ArchivoSeleccionado.OpenReadStream())
+            {
+                var (creditosImportados, mensaje) = await ExcelImportService.ImportCreditosFromExcelAsync(stream, ListaLineas);
+                MensajeImportacion = mensaje;
+                MensajeImportacionExito = creditosImportados.Count > 0;
+
+                if (creditosImportados.Count > 0)
+                {
+                    foreach (var credito in creditosImportados)
+                    {
+                        await CreditoService.AddAsync(credito);
+                    }
+                    await CargarDatos();
+
+                    await Task.Delay(2000);
+                    CerrarImportador();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeImportacion = $"Error: {ex.Message}";
+            MensajeImportacionExito = false;
+        }
+    }
+}

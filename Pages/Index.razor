@@ -1,0 +1,103 @@
+﻿@page "/"
+@using SisPrestamos.Components
+@using SisPrestamos.Model
+@using SisPrestamos.Service
+@inject ClienteService ClienteService
+@inject LineaService LineaService
+@inject CreditoService CreditoService
+@inject PagoService PagoService
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="display-4">Dashboard Préstamos Bancarios</h1>
+            <hr />
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Clientes</h5>
+                    <h2>@TotalClientes</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Líneas</h5>
+                    <h2>@TotalLineas</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Créditos</h5>
+                    <h2>@TotalCreditos</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Pagos</h5>
+                    <h2>$@TotalPagosImporte.ToString("F2")</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Resumen Financiero</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Total Monto Líneas:</strong> $@TotalLineasMonto.ToString("F2")</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Total Importe Créditos:</strong> $@TotalCreditosImporte.ToString("F2")</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Saldo Pendiente:</strong> $@(TotalCreditosImporte - TotalPagosImporte).ToString("F2")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Cliente> ListaClientes = new();
+    private List<Linea> ListaLineas = new();
+    private List<Credito> ListaCreditos = new();
+    private List<Pago> ListaPagos = new();
+
+    private int TotalClientes => ListaClientes.Count;
+    private int TotalLineas => ListaLineas.Count;
+    private int TotalCreditos => ListaCreditos.Count;
+    private decimal TotalLineasMonto => ListaLineas.Sum(l => l.Monto);
+    private decimal TotalCreditosImporte => ListaCreditos.Sum(c => c.Importe);
+    private decimal TotalPagosImporte => ListaPagos.Sum(p => p.Importe);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await DataInitializer.InitializeDefaultDataAsync(ClienteService, LineaService, CreditoService, PagoService);
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        ListaClientes = await ClienteService.GetAllAsync();
+        ListaLineas = await LineaService.GetAllAsync();
+        ListaCreditos = await CreditoService.GetAllAsync();
+        ListaPagos = await PagoService.GetAllAsync();
+    }
+}

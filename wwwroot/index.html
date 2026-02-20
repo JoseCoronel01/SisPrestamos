@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#007bff" />
+    <meta name="description" content="Sistema de Préstamos Bancarios - Gestión de créditos y pagos" />
+    <title>SisPrestamos - Sistema de Préstamos Bancarios</title>
+    <base href="/" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="css/mainlayout.css" rel="stylesheet" />
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="manifest.json" rel="manifest" />
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SisPrestamos" />
+</head>
+
+<body>
+    <div id="app">
+        <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+            <div class="text-center">
+                <h1>Cargando...</h1>
+                <p class="text-muted">Sistema de Préstamos Bancarios</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui" style="display: none;">
+        <div class="alert alert-danger m-3" role="alert">
+            <h4>Error No Controlado</h4>
+            <p>Ha ocurrido un error inesperado en la aplicación.</p>
+            <a href="" class="btn btn-primary me-2">Recargar</a>
+            <button class="btn btn-secondary" onclick="document.getElementById('blazor-error-ui').style.display='none'">Descartar</button>
+        </div>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado:', reg))
+                .catch(err => console.log('Error al registrar Service Worker:', err));
+        }
+
+        window.downloadFile = function (filename, base64content) {
+            const link = document.createElement('a');
+            const data = Uint8Array.from(atob(base64content), c => c.charCodeAt(0));
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        };
+    </script>
+</body>
+
+</html>
