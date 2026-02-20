@@ -10,7 +10,7 @@
 <div class="container-fluid p-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <h1 class="display-4">Dashboard Préstamos Bancarios</h1>
+            <h1 class="display-4">Dashboard Préstamos</h1>
             <hr />
         </div>
     </div>
@@ -44,7 +44,7 @@
             <div class="card bg-warning text-white">
                 <div class="card-body">
                     <h5 class="card-title">Total Pagos</h5>
-                    <h2>$@TotalPagosImporte.ToString("F2")</h2>
+                    <h2>$@TotalPagosImporte</h2>
                 </div>
             </div>
         </div>
@@ -59,13 +59,13 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <p><strong>Total Monto Líneas:</strong> $@TotalLineasMonto.ToString("F2")</p>
+                            <p><strong>Total Monto Líneas:</strong> $@TotalLineasMonto</p>
                         </div>
                         <div class="col-md-4">
-                            <p><strong>Total Importe Créditos:</strong> $@TotalCreditosImporte.ToString("F2")</p>
+                            <p><strong>Total Importe Créditos:</strong> $@TotalCreditosImporte</p>
                         </div>
                         <div class="col-md-4">
-                            <p><strong>Saldo Pendiente:</strong> $@(TotalCreditosImporte - TotalPagosImporte).ToString("F2")</p>
+                            <p><strong>Saldo Pendiente:</strong> $@(TotalCreditosImporte - TotalPagosImporte)</p>
                         </div>
                     </div>
                 </div>
