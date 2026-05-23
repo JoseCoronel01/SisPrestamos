@@ -89,7 +89,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await DataInitializer.InitializeDefaultDataAsync(ClienteService, LineaService, CreditoService, PagoService);
         await CargarDatos();
     }
 
